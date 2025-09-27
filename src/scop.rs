@@ -27,7 +27,7 @@ impl ApplicationHandler for Scop {
                 .create_window(WindowAttributes::default())
                 .expect("ERROR: 5");
 
-            let opengl = OpenGL::new(&window, &event_loop).expect("ERROR: 6");
+            let opengl = OpenGL::new(&window, event_loop).expect("ERROR: 6");
 
             self.window = Some(window);
             self.opengl = Some(opengl);
