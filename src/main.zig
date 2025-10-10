@@ -1,6 +1,6 @@
 const std = @import("std");
 const gl = @import("opengl");
-const glfw = @import("glfw");
+const glfw = @import("zglfw.zig");
 
 const WITDH = 800;
 const HEIGHT = 600;
@@ -8,30 +8,32 @@ const HEIGHT = 600;
 var procs: gl.ProcTable = undefined;
 
 pub fn main() !void {
-    try glfw.init();
-    defer glfw.terminate();
+    if (glfw.Init() == glfw.FALSE)
+        return error.InitFailed;
+    defer glfw.Terminate();
 
-    glfw.windowHint(glfw.ContextVersionMajor, 4);
-    glfw.windowHint(glfw.ContextVersionMinor, 6);
-    glfw.windowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile);
+    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4);
+    glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6);
+    glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
 
-    const window = try glfw.createWindow(WITDH, HEIGHT, "scop", null, null);
-    defer glfw.destroyWindow(window);
+    const window = glfw.CreateWindow(WITDH, HEIGHT, "scop", null, null) orelse return;
+    defer glfw.DestroyWindow(window);
 
-    glfw.makeContextCurrent(window);
+    glfw.MakeContextCurrent(window);
 
-    if (!procs.init(glfw.getProcAddress)) return error.InitFailed;
+    if (!procs.init(glfw.GetProcAddress))
+        return error.InitFailed;
 
     gl.makeProcTableCurrent(&procs);
     defer gl.makeProcTableCurrent(null);
 
     gl.Viewport(0, 0, WITDH, HEIGHT);
 
-    while (!glfw.windowShouldClose(window)) {
+    while (glfw.WindowShouldClose(window) == 0) {
         const alpha: gl.float = 1;
         gl.ClearColor(1, 1, 1, alpha);
         gl.Clear(gl.COLOR_BUFFER_BIT);
-        glfw.swapBuffers(window);
-        glfw.pollEvents();
+        glfw.SwapBuffers(window);
+        glfw.PollEvents();
     }
 }
