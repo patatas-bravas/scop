@@ -1,6 +1,9 @@
 all:
 	zig build run
 
+build: 
+	zig build
+
 clean:
 	rm -rf .zig-cache
 

@@ -1,6 +1,31 @@
 const std = @import("std");
 const gl = @import("opengl");
 const glfw = @import("zglfw.zig");
+const parser = @import("parser.zig");
+
+pub const std_options: std.Options = .{
+    .logFn = log,
+};
+
+pub fn log(
+    comptime level: std.log.Level,
+    comptime scope: @Type(.enum_literal),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    const level_txt = switch (level) {
+        std.log.Level.debug => "[DEBUG]",
+        std.log.Level.info => "[INFO]",
+        std.log.Level.warn => "[WARN]",
+        std.log.Level.err => "[ERR]",
+    };
+
+    const scope_prefix = if (scope != .default) "[" ++ @tagName(scope) ++ "]" else "";
+
+    const stderr = std.debug.lockStderrWriter(&.{});
+    defer std.debug.unlockStderrWriter();
+    stderr.print(level_txt ++ scope_prefix ++ ": " ++ format ++ "\n", args) catch return;
+}
 
 const WITDH = 800;
 const HEIGHT = 600;
@@ -8,6 +33,7 @@ const HEIGHT = 600;
 var procs: gl.ProcTable = undefined;
 
 pub fn main() !void {
+    try parser.ParseObjFile();
     if (glfw.Init() == glfw.FALSE)
         return error.InitFailed;
     defer glfw.Terminate();
