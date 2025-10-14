@@ -1,5 +1,8 @@
+const std = @import("std");
 const gl = @import("opengl");
+
 const glfw = @import("zglfw.zig");
+const loader = @import("loader.zig");
 
 const WITDH = 800;
 const HEIGHT = 600;
@@ -31,6 +34,23 @@ pub const Scop = struct {
     }
 
     pub fn run(self: *Scop) !void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
+        const allocator = gpa.allocator();
+        defer {
+            const status = gpa.deinit();
+            if (status == .leak)
+                @panic("[LEAK]: run()");
+        }
+
+        const data = try loader.loadObj("assets/objects/42.obj", allocator);
+
+        const vertices = data.positions.items;
+
+        const vbo: u32 = undefined;
+        gl.GenBuffers(1, &vbo);
+        gl.BindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.BufferData(gl.ARRAY_BUFFER, @sizeOf(vertices.ptr), vertices.ptr, gl.STATIC_DRAW);
+
         while (glfw.windowShouldClose(self.window) == 0) {
             gl.ClearColor(1, 1, 1, 1);
             gl.Clear(gl.COLOR_BUFFER_BIT);
