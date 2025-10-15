@@ -3,6 +3,7 @@ const gl = @import("opengl");
 
 const glfw = @import("zglfw.zig");
 const loader = @import("loader.zig");
+const utils = @import("utils.zig");
 
 const WITDH = 800;
 const HEIGHT = 600;
@@ -42,14 +43,40 @@ pub const Scop = struct {
                 @panic("[LEAK]: run()");
         }
 
-        const data = try loader.loadObj("assets/objects/42.obj", allocator);
+        var data = try loader.loadObj("assets/objects/42.obj", allocator);
+        defer data.deinit(allocator);
 
-        const vertices = data.positions.items;
-
-        const vbo: u32 = undefined;
-        gl.GenBuffers(1, &vbo);
+        const vertices = data.vertexs.items;
+        var vbo: c_uint = undefined;
+        gl.GenBuffers(1, @ptrCast(&vbo));
         gl.BindBuffer(gl.ARRAY_BUFFER, vbo);
-        gl.BufferData(gl.ARRAY_BUFFER, @sizeOf(vertices.ptr), vertices.ptr, gl.STATIC_DRAW);
+        gl.BufferData(gl.ARRAY_BUFFER, @intCast(@sizeOf(f32) * vertices.len), vertices.ptr, gl.STATIC_DRAW);
+
+        const raw_vertex_shader: []u8 = try utils.getRawFile("assets/shaders/shader.vert", allocator);
+        defer allocator.free(raw_vertex_shader);
+
+        const vertex_shader: c_uint = gl.CreateShader(gl.VERTEX_SHADER);
+        gl.ShaderSource(vertex_shader, 1, @ptrCast(&raw_vertex_shader), null);
+        gl.CompileShader(vertex_shader);
+        try checkShaderCompiled(vertex_shader);
+
+        const raw_fragment_shader: []u8 = try utils.getRawFile("assets/shaders/shader.frag", allocator);
+        defer allocator.free(raw_fragment_shader);
+
+        const fragment_shader: c_uint = gl.CreateShader(gl.FRAGMENT_SHADER);
+        gl.ShaderSource(fragment_shader, 1, @ptrCast(&raw_fragment_shader), null);
+        gl.CompileShader(fragment_shader);
+        try checkShaderCompiled(fragment_shader);
+
+        const shader_program: c_uint = gl.CreateShaderProgram();
+        gl.AttachShader(shader_program, vertex_shader);
+        gl.AttachShader(shader_program, fragment_shader);
+        gl.LinkProgram(shader_program);
+        try checkShaderProgramLink(shader_program);
+        gl.UseProgram(shader_program);
+
+        gl.DeleteShader(vertex_shader);
+        gl.DeleteShader(fragment_shader);
 
         while (glfw.windowShouldClose(self.window) == 0) {
             gl.ClearColor(1, 1, 1, 1);
@@ -59,9 +86,32 @@ pub const Scop = struct {
         }
     }
 
-    pub fn clean(self: *Scop) !void {
+    pub fn deinit(self: *Scop) void {
         gl.makeProcTableCurrent(null);
         glfw.destroyWindow(self.window);
         glfw.terminate();
     }
 };
+
+fn checkShaderCompiled(shader: c_uint) !void {
+    var succes: c_int = undefined;
+    var buffer: [512]u8 = undefined;
+    gl.GetShaderiv(shader, gl.COMPILE_STATUS, @ptrCast(&succes));
+
+    if (succes == 0) {
+        gl.GetShaderInfoLog(shader, buffer.len, null, @ptrCast(&buffer));
+        std.log.debug("{s}", .{buffer});
+        return error.ShaderNotCompile;
+    }
+}
+
+fn checkShaderProgramLink(program: c_uint) !void {
+    var succes: c_int = undefined;
+    var buffer: [512]u8 = undefined;
+    gl.GetProgramiv(program, gl.LINK_STATUS, @ptrCast(&succes));
+    if (succes == 0) {
+        gl.GetProgramInfoLog(program, buffer.len, null, @ptrCast(&buffer));
+        std.log.debug("{s}", .{buffer});
+        return error.ProgramNotLink;
+    }
+}

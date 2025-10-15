@@ -12,8 +12,7 @@ var procs: gl.ProcTable = undefined;
 
 pub fn main() !void {
     var scop = try engine.Scop.init();
+    defer scop.deinit();
 
     try scop.run();
-
-    try scop.clean();
 }
