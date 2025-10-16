@@ -31,6 +31,10 @@ pub fn destroyWindow(window: *c.GLFWwindow) void {
     return c.glfwDestroyWindow(window);
 }
 
+pub fn setFramebufferSizeCallback(window: *c.GLFWwindow, callback: fn (?*c.GLFWwindow, c_int, c_int) callconv(.c) void) void {
+    _ = c.glfwSetFramebufferSizeCallback(window, callback);
+}
+
 pub fn makeContextCurrent(window: *c.GLFWwindow) void {
     return c.glfwMakeContextCurrent(window);
 }
@@ -45,4 +49,8 @@ pub fn swapBuffers(window: *c.GLFWwindow) void {
 
 pub fn pollEvents() void {
     return c.glfwPollEvents();
+}
+
+pub fn getFramebufferSize(window: *c.GLFWwindow, width: *c_int, height: *c_int) void {
+    return c.glfwGetFramebufferSize(window, width, height);
 }

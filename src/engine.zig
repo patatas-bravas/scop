@@ -25,11 +25,15 @@ pub const Scop = struct {
 
         const window = glfw.createWindow(WITDH, HEIGHT, "scop", null, null) orelse return error.FailedToCreateWindow;
         glfw.makeContextCurrent(window);
+        glfw.setFramebufferSizeCallback(window, framebufferSizeCallback);
 
         if (!procs.init(glfw.GetProcAddress))
             return error.InitFailed;
         gl.makeProcTableCurrent(&procs);
-        gl.Viewport(0, 0, WITDH, HEIGHT);
+        var fb_width: c_int = undefined;
+        var fb_height: c_int = undefined;
+        glfw.getFramebufferSize(window, &fb_width, &fb_height);
+        gl.Viewport(0, 0, fb_width, fb_height);
 
         return Scop{ .window = window };
     }
@@ -42,15 +46,32 @@ pub const Scop = struct {
             if (status == .leak)
                 @panic("[LEAK]: run()");
         }
+        var vao: c_uint = undefined;
+        gl.GenVertexArrays(1, @ptrCast(&vao));
+        gl.BindVertexArray(vao);
+        const vertices = [_]f32{
+            0.5,  -0.5, 0.0, 1.0, 0.0, 0.0,
+            -0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
+            0.0,  0.5,  0.0, 0.0, 0.0, 1.0,
+        };
 
-        var data = try loader.loadObj("assets/objects/42.obj", allocator);
-        defer data.deinit(allocator);
-
-        const vertices = data.vertexs.items;
         var vbo: c_uint = undefined;
         gl.GenBuffers(1, @ptrCast(&vbo));
         gl.BindBuffer(gl.ARRAY_BUFFER, vbo);
-        gl.BufferData(gl.ARRAY_BUFFER, @intCast(@sizeOf(f32) * vertices.len), vertices.ptr, gl.STATIC_DRAW);
+        gl.BufferData(gl.ARRAY_BUFFER, @intCast(@sizeOf(f32) * vertices.len), &vertices, gl.STATIC_DRAW);
+        gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 6 * @sizeOf(f32), 0);
+        gl.EnableVertexAttribArray(0);
+
+        gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 6 * @sizeOf(f32), 3 * @sizeOf(f32));
+        gl.EnableVertexAttribArray(1);
+
+        const indices = [_]u32{
+            0, 1, 2,
+        };
+        var ebo: c_uint = undefined;
+        gl.GenBuffers(1, @ptrCast(&ebo));
+        gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+        gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, @intCast(@sizeOf(u32) * indices.len), &indices, gl.STATIC_DRAW);
 
         const raw_vertex_shader: []u8 = try utils.getRawFile("assets/shaders/shader.vert", allocator);
         defer allocator.free(raw_vertex_shader);
@@ -68,7 +89,7 @@ pub const Scop = struct {
         gl.CompileShader(fragment_shader);
         try checkShaderCompiled(fragment_shader);
 
-        const shader_program: c_uint = gl.CreateShaderProgram();
+        const shader_program: c_uint = gl.CreateProgram();
         gl.AttachShader(shader_program, vertex_shader);
         gl.AttachShader(shader_program, fragment_shader);
         gl.LinkProgram(shader_program);
@@ -78,9 +99,16 @@ pub const Scop = struct {
         gl.DeleteShader(vertex_shader);
         gl.DeleteShader(fragment_shader);
 
+        // const texture = try loader.loadBmp("assets/textures/cat.bmp", allocator);
+
         while (glfw.windowShouldClose(self.window) == 0) {
             gl.ClearColor(1, 1, 1, 1);
             gl.Clear(gl.COLOR_BUFFER_BIT);
+
+            gl.UseProgram(shader_program);
+            gl.BindVertexArray(vao);
+            gl.DrawElements(gl.TRIANGLES, @intCast(indices.len), gl.UNSIGNED_INT, 0);
+
             glfw.swapBuffers(self.window);
             glfw.pollEvents();
         }
@@ -92,6 +120,10 @@ pub const Scop = struct {
         glfw.terminate();
     }
 };
+
+fn framebufferSizeCallback(_: ?*glfw.Window, width: c_int, height: c_int) callconv(.c) void {
+    gl.Viewport(0, 0, width, height);
+}
 
 fn checkShaderCompiled(shader: c_uint) !void {
     var succes: c_int = undefined;
