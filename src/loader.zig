@@ -85,14 +85,18 @@ pub fn loadObj(path: []const u8, gpa: std.mem.Allocator) !ObjData {
     return data;
 }
 
-const BmpData = struct {
-    pixel: []u8,
-    size: usize,
+const BmpError = error{InvalidBmpFile};
 
-    pub fn init(pixel: []u8, size: usize) BmpData {
-        return .{ .pixel = pixel, .size = size };
+pub const BmpData = struct {
+    pixel: []u8,
+    width: c_int,
+    height: c_int,
+
+    pub fn init(pixel: []u8, width: c_int, height: c_int) BmpData {
+        return .{ .pixel = pixel, .width = width, .height = height };
     }
-    pub fn deinit(self: *BmpData, allocator: std.mem.Allocator) void {
+
+    pub fn deinit(self: *const BmpData, allocator: std.mem.Allocator) void {
         allocator.free(self.pixel);
     }
 };
@@ -108,20 +112,10 @@ pub fn loadBmp(path: []const u8, gpa: std.mem.Allocator) !BmpData {
     };
     const header = 54;
     if (file.len < header)
-        return error.InviladBmpFile;
+        return BmpError.InvalidBmpFile;
 
     const width = std.mem.readInt(i32, file[18..22], .little);
     const height = std.mem.readInt(i32, file[22..26], .little);
-    const size = height * width;
 
-    var i: usize = header;
-    while (i < size - 2) : (i += 3) {
-        const tmp = file[i];
-        file[i] = file[i + 2];
-        file[i + 2] = tmp;
-    }
-
-    const data = BmpData.init(gpa.dupe(u8, file[header..]), size);
-
-    return data;
+    return BmpData.init(try gpa.dupe(u8, file[header..]), @intCast(width), @intCast(height));
 }

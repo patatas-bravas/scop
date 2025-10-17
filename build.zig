@@ -23,6 +23,12 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
+    const zglfw = b.dependency("zglfw", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe.root_module.addImport("glfw", zglfw.module("glfw"));
     exe.linkLibC();
     exe.linkSystemLibrary("glfw");
 
