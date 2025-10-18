@@ -1,4 +1,4 @@
-const std = @import("std");
+// const std = @import("std");
 const gl = @import("opengl");
 
 pub const Vao = struct {
@@ -7,6 +7,9 @@ pub const Vao = struct {
         gl.GenVertexArrays(1, @ptrCast(&vao));
         gl.BindVertexArray(vao);
         return vao;
+    }
+    pub fn deinit(vao: c_uint) void {
+        gl.DeleteVertexArrays(1, @ptrCast(&vao));
     }
 };
 
@@ -27,6 +30,9 @@ pub const Vbo = struct {
         gl.EnableVertexAttribArray(2);
         return vbo;
     }
+    pub fn deinit(vbo: c_uint) void {
+        gl.DeleteBuffers(1, @ptrCast(&vbo));
+    }
 };
 
 pub const Ebo = struct {
@@ -36,5 +42,8 @@ pub const Ebo = struct {
         gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
         gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, @intCast(@sizeOf(u32) * indices.len), @ptrCast(indices), gl.STATIC_DRAW);
         return ebo;
+    }
+    pub fn deinit(ebo: c_uint) void {
+        gl.DeleteBuffers(1, @ptrCast(&ebo));
     }
 };
