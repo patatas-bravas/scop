@@ -9,6 +9,7 @@ const setup = @import("engine/setup.zig");
 const buffer = @import("engine/buffer.zig");
 const shader = @import("engine/shader.zig");
 const texture = @import("engine/texture.zig");
+const vector = @import("engine/vector.zig");
 
 pub const Scop = struct {
     window: *glfw.Window,
