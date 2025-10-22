@@ -25,7 +25,7 @@ pub const ObjData = struct {
 };
 
 pub fn loadObj(path: []const u8, gpa: std.mem.Allocator) !ObjData {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
     const allocator = arena.allocator();
 

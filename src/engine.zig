@@ -18,7 +18,6 @@ pub const Scop = struct {
         const window = try setup.context();
         return .{ .window = window };
     }
-
     pub fn run(self: *Scop) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
         const allocator = gpa.allocator();
@@ -27,8 +26,8 @@ pub const Scop = struct {
             if (status == .leak)
                 @panic("[LEAK]: run()");
         }
-        const vao = buffer.Vao.init();
-        defer buffer.Vao.deinit(vao);
+        const vao = buffer.createVAO();
+        defer buffer.deleteVAO(vao);
 
         const vertices = [_]f32{
             0.5,  0.5,  0.0, 1.0, 0.0, 0.0, 1.0, 1.0,
@@ -37,27 +36,27 @@ pub const Scop = struct {
             -0.5, 0.5,  0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
         };
 
-        const vbo = buffer.Vbo.init(&vertices);
-        defer buffer.Vbo.deinit(vbo);
+        const vbo = buffer.createVBO(&vertices);
+        defer buffer.deleteVBO(vbo);
 
         const indices = [_]u32{ 0, 1, 2, 0, 2, 3 };
 
-        const ebo = buffer.Ebo.init(&indices);
-        defer buffer.Ebo.deinit(ebo);
+        const ebo = buffer.createEBO(&indices);
+        defer buffer.deleteEBO(ebo);
 
-        const shaders = try shader.Shader.init();
+        const shader_program = try shader.createShaderProgram(allocator);
 
-        var textures = texture.Generator.init();
+        var textures = texture.Textures.init();
 
-        try textures.createTexture("assets/textures/cat.bmp", "texture1", shaders.program, allocator);
+        try textures.createTexture("assets/textures/cat.bmp", "texture1", shader_program, allocator);
 
-        try textures.createTexture("assets/textures/awesomeface.bmp", "lol", shaders.program, allocator);
+        try textures.createTexture("assets/textures/awesomeface.bmp", "lol", shader_program, allocator);
 
         while (!glfw.windowShouldClose(self.window)) {
             gl.ClearColor(0, 0, 0, 1);
             gl.Clear(gl.COLOR_BUFFER_BIT);
 
-            gl.UseProgram(shaders.program);
+            gl.UseProgram(shader_program);
             textures.activeTexture();
             gl.BindVertexArray(vao);
             gl.DrawElements(gl.TRIANGLES, @intCast(indices.len), gl.UNSIGNED_INT, 0);
