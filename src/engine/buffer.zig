@@ -17,14 +17,8 @@ pub fn createVBO(vertices: []const f32) c_uint {
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.BufferData(gl.ARRAY_BUFFER, @intCast(@sizeOf(f32) * vertices.len), @ptrCast(vertices), gl.STATIC_DRAW);
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 8 * @sizeOf(f32), 0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * @sizeOf(f32), 0);
     gl.EnableVertexAttribArray(0);
-
-    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 8 * @sizeOf(f32), 3 * @sizeOf(f32));
-    gl.EnableVertexAttribArray(1);
-
-    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 8 * @sizeOf(f32), 6 * @sizeOf(f32));
-    gl.EnableVertexAttribArray(2);
     return vbo;
 }
 

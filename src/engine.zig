@@ -4,12 +4,12 @@ const gl = @import("opengl");
 
 const loader = @import("loader.zig");
 const utils = @import("utils.zig");
+const math = @import("math.zig");
 
 const setup = @import("engine/setup.zig");
 const buffer = @import("engine/buffer.zig");
 const shader = @import("engine/shader.zig");
 const texture = @import("engine/texture.zig");
-const vector = @import("engine/vector.zig");
 
 pub const Scop = struct {
     window: *glfw.Window,
@@ -26,35 +26,35 @@ pub const Scop = struct {
             if (status == .leak)
                 @panic("[LEAK]: run()");
         }
+        var data = try loader.loadObj("assets/objects/cube.obj", allocator);
+        defer data.deinit(allocator);
+        const vertices: []f32 = data.vertexs.items;
+        const indices: []u32 = data.faces.items;
+
         const vao = buffer.createVAO();
         defer buffer.deleteVAO(vao);
 
-        const vertices = [_]f32{
-            0.5,  0.5,  0.0, 1.0, 0.0, 0.0, 1.0, 1.0,
-            0.5,  -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0,
-            -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-            -0.5, 0.5,  0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
-        };
-
-        const vbo = buffer.createVBO(&vertices);
+        const vbo = buffer.createVBO(vertices);
         defer buffer.deleteVBO(vbo);
 
-        const indices = [_]u32{ 0, 1, 2, 0, 2, 3 };
-
-        const ebo = buffer.createEBO(&indices);
+        const ebo = buffer.createEBO(indices);
         defer buffer.deleteEBO(ebo);
 
         const shader_program = try shader.createShaderProgram(allocator);
 
         var textures = texture.Textures.init();
 
-        try textures.createTexture("assets/textures/cat.bmp", "texture1", shader_program, allocator);
-
-        try textures.createTexture("assets/textures/awesomeface.bmp", "lol", shader_program, allocator);
+        try textures.createTexture("assets/textures/cat.bmp", "texture", shader_program, allocator);
 
         while (!glfw.windowShouldClose(self.window)) {
             gl.ClearColor(0, 0, 0, 1);
             gl.Clear(gl.COLOR_BUFFER_BIT);
+
+            var trans = math.createIdentityMat();
+            trans = math.rotationZMat(trans, @floatCast(glfw.getTime()));
+
+            const transform: c_int = gl.GetUniformLocation(shader_program, "transform");
+            gl.UniformMatrix4fv(transform, 1, gl.FALSE, @ptrCast(&trans));
 
             gl.UseProgram(shader_program);
             textures.activeTexture();

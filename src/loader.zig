@@ -9,7 +9,7 @@ pub const ObjError = error{
 
 pub const ObjData = struct {
     vertexs: std.ArrayList(f32),
-    faces: std.ArrayList(i32),
+    faces: std.ArrayList(u32),
 
     pub fn init() ObjData {
         return .{
@@ -35,13 +35,15 @@ pub fn loadObj(path: []const u8, gpa: std.mem.Allocator) !ObjData {
     };
 
     var data = ObjData.init();
+    errdefer data.deinit(gpa);
 
-    var lines = std.mem.splitScalar(u8, file, '\n');
+    var lines = std.mem.tokenizeScalar(u8, file, '\n');
     while (lines.next()) |line| {
         if (std.mem.eql(u8, line, "") or std.mem.eql(u8, line, "#"))
             continue;
 
-        var contents = std.mem.splitScalar(u8, std.mem.trim(u8, line, " "), ' ');
+        const trim = std.mem.trim(u8, line, " ");
+        var contents = std.mem.tokenizeScalar(u8, trim, ' ');
         if (contents.next()) |info_type| {
             if (std.mem.eql(u8, info_type, "#") or
                 std.mem.eql(u8, info_type, "mtllib") or
@@ -59,11 +61,11 @@ pub fn loadObj(path: []const u8, gpa: std.mem.Allocator) !ObjData {
                 if (i != 3)
                     return ObjError.InvalidVertex;
             } else if (std.mem.eql(u8, info_type, "f")) {
-                var face: std.ArrayList(i32) = .empty;
+                var face: std.ArrayList(u32) = .empty;
                 defer face.deinit(allocator);
 
                 while (contents.next()) |content| {
-                    const value = try std.fmt.parseInt(i32, content, 10);
+                    const value = try std.fmt.parseInt(u32, content, 10);
                     try face.append(allocator, value);
                 }
 
@@ -101,8 +103,9 @@ pub const BmpData = struct {
     }
 };
 
+const BMP_HEADER_SIZE = 54;
 pub fn loadBmp(path: []const u8, gpa: std.mem.Allocator) !BmpData {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
     const allocator = arena.allocator();
 
@@ -110,12 +113,11 @@ pub fn loadBmp(path: []const u8, gpa: std.mem.Allocator) !BmpData {
         std.log.err("Failure to get raw data from the file from {s}: {s}", .{ path, @errorName(err) });
         return err;
     };
-    const header = 54;
-    if (file.len < header)
+    if (file.len < BMP_HEADER_SIZE)
         return BmpError.InvalidBmpFile;
 
     const width = std.mem.readInt(i32, file[18..22], .little);
     const height = std.mem.readInt(i32, file[22..26], .little);
 
-    return BmpData.init(try gpa.dupe(u8, file[header..]), @intCast(width), @intCast(height));
+    return BmpData.init(try gpa.dupe(u8, file[BMP_HEADER_SIZE..]), @intCast(width), @intCast(height));
 }
