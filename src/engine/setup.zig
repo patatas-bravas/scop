@@ -4,8 +4,8 @@ const glfw = @import("glfw");
 
 var procs: gl.ProcTable = undefined;
 
-const WITDH = 800;
-const HEIGHT = 600;
+const WITDH = 1600;
+const HEIGHT = 1200;
 
 const VERSION_MAJOR = 4;
 const VERSION_MINOR = 6;

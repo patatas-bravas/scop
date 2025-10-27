@@ -26,7 +26,7 @@ pub const Scop = struct {
             if (status == .leak)
                 @panic("[LEAK]: run()");
         }
-        var data = try loader.loadObj("assets/objects/cube.obj", allocator);
+        var data = try loader.loadObj("assets/objects/42.obj", allocator);
         defer data.deinit(allocator);
         const vertices: []f32 = data.vertexs.items;
         const indices: []u32 = data.faces.items;
@@ -44,17 +44,26 @@ pub const Scop = struct {
 
         var textures = texture.Textures.init();
 
-        try textures.createTexture("assets/textures/cat.bmp", "texture", shader_program, allocator);
+        try textures.createTexture("assets/textures/brick.bmp", "basic", shader_program, allocator);
+
+        gl.Enable(gl.DEPTH_TEST);
+        var view = math.createIdentityMat();
+        view = math.mulScalarMat(view, 0.3);
+        const view_u: c_int = gl.GetUniformLocation(shader_program, "view");
+        var model = math.createIdentityMat();
+        const model_u: c_int = gl.GetUniformLocation(shader_program, "model");
+        var projection = math.createOrthoMat(-2.0, 2.0, -1.5, 1.5, 0.1, 100.0);
+        const projection_u: c_int = gl.GetUniformLocation(shader_program, "projection");
 
         while (!glfw.windowShouldClose(self.window)) {
-            gl.ClearColor(0, 0, 0, 1);
-            gl.Clear(gl.COLOR_BUFFER_BIT);
+            gl.ClearColor(1, 0.3, 0.5, 1);
+            gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            var trans = math.createIdentityMat();
-            trans = math.rotationZMat(trans, @floatCast(glfw.getTime()));
+            model = math.rotationYMat(model, @floatCast(glfw.getTime()));
 
-            const transform: c_int = gl.GetUniformLocation(shader_program, "transform");
-            gl.UniformMatrix4fv(transform, 1, gl.FALSE, @ptrCast(&trans));
+            gl.UniformMatrix4fv(model_u, 1, gl.FALSE, @ptrCast(&model));
+            gl.UniformMatrix4fv(view_u, 1, gl.FALSE, @ptrCast(&view));
+            gl.UniformMatrix4fv(projection_u, 1, gl.FALSE, @ptrCast(&projection));
 
             gl.UseProgram(shader_program);
             textures.activeTexture();

@@ -17,16 +17,26 @@ pub fn createIdentityMat() Mat4 {
     return mat;
 }
 
+pub fn createOrthoMat(left: f32, right: f32, top: f32, bottom: f32, near: f32, far: f32) Mat4 {
+    // if (left > right or bottom > top or near > far) unreachable;
+    var mat = createIdentityMat();
+    mat[0][0] = 2.0 / (right - left);
+    mat[1][1] = 2.0 / (top - bottom);
+    mat[2][2] = -2.0 / (far - near);
+
+    mat[0][3] = -(right + left) / (right - left);
+    mat[1][3] = -(top + bottom) / (top - bottom);
+    mat[2][3] = -(far + near) / (far - near);
+    return mat;
+}
+
 pub fn mulVecMat(mat: Mat4, vec: Vec4) Vec4 {
-    var result: @Vector(4, f32) = undefined;
-    inline for (0..4) |i| {
-        result[i] =
-            mat[i][0] * vec[0] +
-            mat[i][1] * vec[1] +
-            mat[i][2] * vec[2] +
-            mat[i][3] * vec[3];
-    }
-    return result;
+    return .{
+        @reduce(.Add, mat[0] * vec),
+        @reduce(.Add, mat[1] * vec),
+        @reduce(.Add, mat[2] * vec),
+        @reduce(.Add, mat[3] * vec),
+    };
 }
 
 pub fn mulScalarMat(mat: Mat4, x: f32) Mat4 {
@@ -37,7 +47,7 @@ pub fn mulScalarMat(mat: Mat4, x: f32) Mat4 {
     return result;
 }
 
-pub fn transMat(mat: Mat4, vec: Vec4) Mat4 {
+pub fn transMat(mat: Mat4, vec: Vec3) Mat4 {
     var result = mat;
     inline for (0..3) |i| {
         result[3][i] += vec[i];
@@ -53,6 +63,7 @@ pub fn rotationXMat(mat: Mat4, theta: f32) Mat4 {
     result[2][2] = @cos(theta);
     return result;
 }
+
 pub fn rotationYMat(mat: Mat4, theta: f32) Mat4 {
     var result = mat;
     result[0][0] = @cos(theta);
@@ -69,8 +80,4 @@ pub fn rotationZMat(mat: Mat4, theta: f32) Mat4 {
     result[1][0] = @sin(theta);
     result[1][1] = @cos(theta);
     return result;
-}
-
-pub fn magnitudeVec(vec: Vec4) f32 {
-    return @sqrt(@reduce(.Add, vec * vec));
 }

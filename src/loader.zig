@@ -118,6 +118,6 @@ pub fn loadBmp(path: []const u8, gpa: std.mem.Allocator) !BmpData {
 
     const width = std.mem.readInt(i32, file[18..22], .little);
     const height = std.mem.readInt(i32, file[22..26], .little);
-
-    return BmpData.init(try gpa.dupe(u8, file[BMP_HEADER_SIZE..]), @intCast(width), @intCast(height));
+    const start = std.mem.readInt(u32, file[10..14], .little);
+    return BmpData.init(try gpa.dupe(u8, file[start..]), @intCast(width), @intCast(height));
 }
