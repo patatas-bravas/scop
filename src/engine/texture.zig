@@ -14,7 +14,7 @@ pub const Textures = struct {
     }
 
     pub fn createTexture(self: *Textures, path: []const u8, name: [:0]const u8, shader_program: c_uint, allocator: std.mem.Allocator) !void {
-        const data = try loader.loadBmp(path, allocator);
+        const data = try loader.bmp.loadFile(path, allocator);
         defer data.deinit(allocator);
         var texture: c_uint = undefined;
         gl.GenTextures(1, @ptrCast(&texture));
