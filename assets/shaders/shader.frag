@@ -3,8 +3,8 @@
 in vec3 color;
 in vec2 textureCoor;
 
-out vec4 FragColor;
 out vec4 FragTexture;
+out vec4 FragColor;
 
 uniform sampler2D basic;
 

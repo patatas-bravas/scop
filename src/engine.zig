@@ -26,7 +26,7 @@ pub const Scop = struct {
             if (status == .leak)
                 @panic("[LEAK]: run()");
         }
-        var data = try loader.obj.loadFile("assets/objects/42.obj", allocator);
+        var data = try loader.obj.loadFile("assets/objects/teapot2.obj", allocator);
         defer data.deinit(allocator);
         const vertices: []f32 = data.vertexs.items;
         const indices: []u32 = data.faces.items;
@@ -47,19 +47,21 @@ pub const Scop = struct {
         try textures.createTexture("assets/textures/brick.bmp", "basic", shader_program, allocator);
 
         gl.Enable(gl.DEPTH_TEST);
-        var view = math.matrix.createIdentity();
-        view = math.matrix.scalingScalar(view, 0.3);
-        const view_u: c_int = gl.GetUniformLocation(shader_program, "view");
         var model = math.matrix.createIdentity();
-        const model_u: c_int = gl.GetUniformLocation(shader_program, "model");
-        var projection = math.matrix.createOrtho(5, 15, -3, 7, 0.1, 100);
-        const projection_u: c_int = gl.GetUniformLocation(shader_program, "projection");
+        const model_u = gl.GetUniformLocation(shader_program, "model");
+        const view_u = gl.GetUniformLocation(shader_program, "view");
+        var projection = math.matrix.createPerspective(100.0, 1.5, 0.1, 100.0);
+        const projection_u = gl.GetUniformLocation(shader_program, "projection");
+
+        const radius = 10.0;
 
         while (!glfw.windowShouldClose(self.window)) {
             gl.ClearColor(1, 0.3, 0.5, 1);
             gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            const camX: f32 = @floatCast(@sin(glfw.getTime() * radius));
+            const camY: f32 = @floatCast(@cos(glfw.getTime() * radius));
 
-            model = math.matrix.rotationYMat(model, @floatCast(glfw.getTime()));
+            var view = math.matrix.createLookAt(.{ camX, 0.0, camY }, .{ 0.0, 0.0, 0.0 }, .{ 0.0, 1.0, 0.0 });
 
             gl.UniformMatrix4fv(model_u, 1, gl.FALSE, @ptrCast(&model));
             gl.UniformMatrix4fv(view_u, 1, gl.FALSE, @ptrCast(&view));
